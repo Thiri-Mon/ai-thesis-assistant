@@ -4,6 +4,7 @@ openpyxl
 langchain-ollama
 langchain-huggingface
 langchain-chroma
+langchain-community
 chromadb
 pypdf
 sentence-transformers
