@@ -57,8 +57,8 @@ DB_DIR = os.path.join(BASE_DIR, "chroma_db_storage")
 @st.cache_resource
 def load_embedding_model():
     return HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
-        model_kwargs={"local_files_only": True} # False for downloading
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={"device": "cpu"} # fixed within deploying
     )
 
 embeddings = load_embedding_model()
