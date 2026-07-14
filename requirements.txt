@@ -10,3 +10,5 @@ pypdf
 sentence-transformers
 langchain-groq
 python-dotenv
+sentence-transformers
+torch
