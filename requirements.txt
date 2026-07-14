@@ -1,0 +1,11 @@
+streamlit
+pandas
+openpyxl
+langchain-ollama
+langchain-huggingface
+langchain-chroma
+chromadb
+pypdf
+sentence-transformers
+langchain-groq
+python-dotenv
