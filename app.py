@@ -2,7 +2,7 @@ import os
 import gc           
 import streamlit as st
 import tempfile
-import pandas as pd  # For Excel နှင့် CSV 
+import pandas as pd 
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from langchain_chroma import Chroma
@@ -49,11 +49,11 @@ def get_llm():
         st.error(f"LLM Error: {e}")
         return None
 
-# 🌟 SBERT Embedding Model Initializing ,UNIVERSAL DEPLOYMENT ROUTINE for any platform  
+#  SBERT Embedding Model Initializing ,UNIVERSAL DEPLOYMENT ROUTINE for any platform  
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_DIR = os.path.join(BASE_DIR, "chroma_db_storage")
 
-# 🌟 SBERT Embedding Model Initializing
+#  SBERT Embedding Model Initializing
 @st.cache_resource
 def load_embedding_model():
     return HuggingFaceEmbeddings(
@@ -66,7 +66,7 @@ embeddings = load_embedding_model()
 llm = get_llm()
 
 # =========================================================================
-# 1. Session State Start-up & ChromaDB Auto-Load System (Two in One place)
+#  Session State Start-up & ChromaDB Auto-Load System (Two in One place)
 # =========================================================================
 if "messages" not in st.session_state:
     st.session_state.messages = [{
@@ -109,7 +109,7 @@ def is_database_empty():
         return True
 
 # =========================================================================
-# 3. Sidebar Configuration (File Uploading & Database Installation)
+# Sidebar Configuration (File Uploading & Database Installation)
 # =========================================================================
 st.sidebar.header("📁 Thesis Data Upload")
 
@@ -143,7 +143,7 @@ if st.sidebar.button("Store into Database"):
             
             documents = []
             
-            # 💡 Data Reading for each file
+            # Data Reading for each file
             for uploaded_file in uploaded_files:
                 try:
                     if uploaded_file.name.endswith(('.xlsx', '.xls')):
@@ -282,47 +282,29 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
     
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
-        
-        # Your full routing logic (is_greeting, duplicate detection, system_prompt, etc.) 
-        # remains exactly as you wrote it. 
-        # (I kept the entire block from your original code to avoid breaking your complex logic)
 
         query_lower = user_query.lower()
         is_greeting = any(g_kw in query_lower for g_kw in ["hello", "hi", "hey", "မင်္ဂလာပါ", "good morning", "good afternoon"])
-        # ... (All your routing logic continues here - unchanged) ...
-        # 2. Check if user used checking keywords
+        
         has_keywords = any(kw in query_lower for kw in ["thesis", "title", "ခေါင်းစဉ်", "စစ်", "similar", "duplicate", "တူ"])
         
-         #  Opti: Catch engineering keywords commonly found in short titles
+         #Catch engineering keywords commonly found in short titles
         engineering_keywords  = ["system", "detection", "analysis", "monitoring", "framework", "using", "control",
                                 "chatbot", "ai", "learning", "networks", "recognition", "automation",
                                 "mining", "algorithm", "fp-growth", "apriori", "prediction", "classification", 
                                 "regression", "modeling", "optimization", "cluster", "pattern"]
-        # 3. Only run a database check if it's NOT a basic greeting, has keywords, and is a substantial sentence length
-        #is_thesis_check = False --->
-        #if not is_greeting and (has_keywords or len(user_query) > 35):
-                # Ensure short transitional sentences do not force lookups
-                #if len(user_query) > 35 or not has_keywords:
+        # Only run a database check if it's NOT a basic greeting, has keywords, and is a substantial sentence length
         # Smart Gate: Triggers database lookup if it's NOT a greeting AND:
         # (Has thesis keywords OR is a long title OR is a short engineering title)
         # Only run a database check if it's a substantive phrase with technical structural intent
         is_asking_to_check = any(phrase in query_lower for phrase in ["wanna check", "want to check", "how to check", "can i check"])
     
-        #is_true_academic_length = len(user_query) > 45--->
-
-
-        #if not is_greeting and (has_keywords or len(user_query) > 35 or has_engineering_terms) and not is_asking_to_check:
-                #is_thesis_check = True
-        ##if not is_greeting and (has_keywords or is_true_academic_length or has_engineering_terms) and not is_asking_to_check:---->
-                #is_thesis_check = True--->
-
-
         has_engineering_terms = any(eng_kw in query_lower for eng_kw in engineering_keywords)
-        # 💡 THE BRAIN FIX: Loops through the list variable 'engineering_keywords', NOT the boolean!
+        #  FIX: Loops through the list variable 'engineering_keywords', NOT the boolean!
         matched_terms_count = sum(1 for eng_kw in engineering_keywords  if eng_kw in query_lower)
         has_academic_indicators = any(ind in query_lower for ind in ["study", "research", "proposal", "investigation", "project", "design", "implementation"])
             
-            # 💡 THE BRAIN RULE: An academic title requires technical nouns.
+            # RULE: An academic title requires technical nouns.
             # If it's long but has fewer than 2 engineering terms, it's categorized as casual chatter!
         is_thesis_check = False
             
@@ -344,7 +326,7 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
         
         else:
             # =========================================================================
-            # 🟢 THE DEFINITIVE FAREWELL INTERCEPTOR (Bypasses Database Loops)
+            #  THE DEFINITIVE FAREWELL Block (Bypasses Database Loops)
             # =========================================================================
             query_lower = user_query.lower().strip().replace(",", " ").replace(".", " ")
             farewell_keywords = ["bye", "goodbye", "stop here", "be back", "see you", "leave now", "quit", "exit"]
@@ -361,7 +343,7 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
             
             # If DB exists, Context is generated
             if is_thesis_check and not is_database_empty():
-                # 🟢 STEP 1: Keep spaces for SBERT search! Only remove quotes here.
+                #  Keep spaces for SBERT search! Only remove quotes here.
                 clean_query = user_query.lower().strip().replace('"', '').replace("'", "")
                 
                 # SBERT searches ChromaDB using the clean query WITH spaces intact
@@ -394,7 +376,7 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
                     # Extract source file strings and translate department tags safely
                     raw_source = doc.metadata.get("source", "Unknown.xlsx")
                     if " (" in raw_source:
-                    # 🟢 FIX: Added [0] at the end to pull the raw text string out of the array!
+                    # Added [0] at the end to pull the raw text string out of the array!
                        clean_file = raw_source.split(" (")[0]
                     else:
                        clean_file = raw_source
@@ -402,8 +384,8 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
                     dept_code = clean_file.replace(".xlsx", "").replace(".xls", "").upper().strip()
                     major_name = dept_mapping.get(dept_code, dept_code)
 
-                     # 💡 THE INTELLIGENT COMPLIANCE GATE:
-                    # 1. Triggers if ChromaDB vector score settles below your sensitivity slider threshold
+                    # THE INTELLIGENT COMPLIANCE GATE:
+                    # 1. Triggers if ChromaDB vector score settles below  sensitivity slider threshold
                     # 2. OR if it's an academic-length phrase and the stripped character fingerprints match perfectly
                     is_academic_length = len(user_query) > 30
                     
@@ -429,7 +411,7 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
 
                     is_real_title_length = len(user_query) > 35
 
-                                # 💡 THE PROMPT INJECTION SCREENER SHIELD:
+                    # THE PROMPT INJECTION SCREENER SHIELD:
                     # Detect if the input query contains adversarial hijacking command keywords.
                     # If an injection is detected, we completely suppress the reference box!
                     injection_keywords = ["ignore all", "previous instructions", "system override", "override parameters"]
@@ -440,14 +422,12 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
                         st.code(context, language="text")
 
                     
-            # Chat History (Memory) Building
-                        # =========================================================================
-            # 🔄 FIXED AREA 3: SLIDING WINDOW CHAT MEMORY (Perfect Long-Turn Solution)
+            # Chat History (Memory Building)
+            # SLIDING WINDOW CHAT MEMORY (Perfect Long-Turn Solution)
             # =========================================================================
             chat_history_str = ""
             
             # Slice the history to only remember the last 4 items (2 turns of user/assistant exchange)
-            # This perfectly prevents old topics (like Food or Malarial Parasites) from bleeding into new turns
             recent_messages = st.session_state.messages[-4:] if len(st.session_state.messages) > 4 else st.session_state.messages
             
             for msg in recent_messages:
@@ -462,15 +442,11 @@ if user_query := st.chat_input("Enter your Thesis Title for duplicate check...")
 
 
 
+            # BULLETPROOF LOGIC ROUTER (Separates Unique from Duplicate Channels)
             # =========================================================================
-            # 🔴 BULLETPROOF LOGIC ROUTER (Separates Unique from Duplicate Channels)
+            # OPTIMIZED HYBRID LOGIC ROUTER & ULTRA-STRICT HYBRID PROMPT ROUTER 
             # =========================================================================
-                        # =========================================================================
-            # 🔴 OPTIMIZED HYBRID LOGIC ROUTER (The Best Combination)
-            # =========================================================================
-                       # =========================================================================
-            # 🔴 ULTRA-STRICT HYBRID PROMPT ROUTER (Zero Conversation on Duplicates)
-            # =========================================================================
+
             if is_duplicate_detected:
                 # Mode A: High-Security Duplicate Warning (Forces absolute raw text use)
                 system_prompt = (
