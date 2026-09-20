@@ -509,14 +509,14 @@ if st.sidebar.button("Store into Database"):
                 st.sidebar.success(f" Total data from All departments ({len(documents)}) titles are succesfully stored.")
                 st.rerun()
 
-                        st.sidebar.markdown("---")
-                        if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
-                            try:
-                                collection.delete(where={})
-                                st.sidebar.success("💥 Database fully cleared back to 0!")
-                                st.rerun()
-                            except Exception as wipe_fault:
-                                st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
+            st.sidebar.markdown("---")
+            if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
+                try:
+                    collection.delete(where={})
+                    st.sidebar.success("💥 Database fully cleared back to 0!")
+                    st.rerun()
+                except Exception as wipe_fault:
+                    st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
             else:
                 st.sidebar.error("❌ Thesis data not found!")
     else:
