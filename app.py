@@ -206,22 +206,17 @@ if "messages" not in st.session_state or len(st.session_state.messages) == 0:
 
 # ChromaDB uploaded or not Function
 def is_database_empty():
-   
-    if st.session_state.vector_store is None:
+    # ─── THE DIRECT FIX: Safely read from memory without throwing key lookup errors ───
+    v_store = st.session_state.get("vector_store", None)
+    
+    if v_store is None:
         return True
     try:
-        total_count = st.session_state.vector_store._collection.count()
+        # Extract the matching record ids natively from your collection object wrapper
+        total_count = v_store._collection.count()
         return total_count == 0
     except Exception:
-        
-        return True
-            
-    try:
-        db_data = st.session_state.vector_store.get()
-        if db_data and 'ids' in db_data and len(db_data['ids']) > 0:
-            return False  # Data exists
-        return True       # Empty data
-    except Exception:
+        # Graceful fallback assignment to prevent application state locks
         return True
 
 # =========================================================================
