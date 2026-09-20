@@ -202,24 +202,7 @@ if "messages" not in st.session_state or len(st.session_state.messages) == 0:
             )
         })
 
-# =====================================================================
-# GLOBAL CHROMADB SYSTEM INITIALIZATION GATEWAY (LINES 205-216)
-# =====================================================================
-# Check if the store is completely missing OR explicitly set to None post-wipe
-if "vector_store" not in st.session_state or st.session_state.vector_store is None:
-    try:
-        from langchain_chroma import Chroma
-        
-        # This auto-initialization schema safely builds a brand new database path 
-        # structure directory immediately if DB_DIR was purged or empty!
-        st.session_state.vector_store = Chroma(
-            collection_name="thesis_collection",
-            persist_directory=DB_DIR,
-            embedding_function=embeddings  # Matches your global 'embeddings' variable name exactly!
-        )
-    except Exception as init_fault:
-        # Graceful fallback assignment to prevent application boot locks
-        st.session_state.vector_store = None
+
 
 # ChromaDB uploaded or not Function
 def is_database_empty():
@@ -318,6 +301,16 @@ threshold_input = st.sidebar.slider(
 # ==============================================================================
 if st.sidebar.button("Store into Database"):
     if uploaded_files:
+        if "vector_store" not in st.session_state or st.session_state.vector_store is None:
+            from langchain_chroma import Chroma
+            st.session_state.vector_store = Chroma(
+                collection_name="thesis_collection",
+                persist_directory=DB_DIR,
+                embedding_function=embeddings
+            )
+        
+        # ─── 🚀 INSERT THIS CRITICAL COLLECTION BRIDGE VARIABLE LINE RIGHT HERE ───
+        collection = st.session_state.vector_store._collection
         with st.sidebar.spinner("Vectorizing data into Vector Database ..."):
             
             documents = []
