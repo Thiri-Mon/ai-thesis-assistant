@@ -223,17 +223,15 @@ if "vector_store" not in st.session_state or st.session_state.vector_store is No
 
 # ChromaDB uploaded or not Function
 def is_database_empty():
+   
     if st.session_state.vector_store is None:
-        if os.path.exists(DB_DIR):
-            try:
-                st.session_state.vector_store = Chroma(
-                    persist_directory=DB_DIR,
-                    embedding_function=embeddings
-                )
-            except Exception:
-                return True
-        else:
-            return True
+        return True
+    try:
+        total_count = st.session_state.vector_store._collection.count()
+        return total_count == 0
+    except Exception:
+        
+        return True
             
     try:
         db_data = st.session_state.vector_store.get()
