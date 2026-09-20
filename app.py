@@ -529,7 +529,7 @@ if not is_database_empty():
 st.sidebar.markdown("---")
 if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
         try:
-            collection.delete(where={})
+            documents.delete(where={})
             st.sidebar.success("💥 Database fully cleared back to 0!")
             st.rerun()
         except Exception as wipe_fault:
