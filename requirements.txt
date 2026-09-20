@@ -10,5 +10,4 @@ pypdf
 sentence-transformers
 langchain-groq
 python-dotenv
---find-links https://pytorch.org
-torch--index-url https://pytorch.org
+torch --index-url https://pytorch.org
