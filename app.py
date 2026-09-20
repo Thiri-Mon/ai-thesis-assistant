@@ -527,7 +527,7 @@ if not is_database_empty():
         pass
 
 st.sidebar.markdown("---")
-    if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
+if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
         try:
             collection.delete(where={})
             st.sidebar.success("💥 Database fully cleared back to 0!")
