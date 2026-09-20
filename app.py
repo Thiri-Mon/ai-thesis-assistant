@@ -457,7 +457,7 @@ if st.sidebar.button("Store into Database"):
                         st.session_state.all_extracted_documents = documents
 
                             
-
+                    
 
                     elif uploaded_file.name.endswith('.csv'):
                         uploaded_file.seek(0)
@@ -471,7 +471,18 @@ if st.sidebar.button("Store into Database"):
                 except Exception as e:
                     st.sidebar.error(f"Error reading file {uploaded_file.name}: {e}")
                     continue
-                            
+
+            st.sidebar.markdown("---")
+
+            if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
+                try:
+                    # Securely flushes your active ChromaDB indexing slots out of cache memory
+                    collection.delete(where={})
+                    st.sidebar.success("💥 Database fully cleared back to 0!")
+                    st.rerun()
+                except Exception as wipe_fault:
+                    st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
+
             if documents:
                 if "vector_store" in st.session_state:
                     st.session_state.vector_store = None
@@ -497,6 +508,16 @@ if st.sidebar.button("Store into Database"):
 
                 st.sidebar.success(f" Total data from All departments ({len(documents)}) titles are succesfully stored.")
                 st.rerun()
+
+                st.sidebar.markdown("---")
+
+                if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
+                    try:
+                        collection.delete(where={})
+                        st.sidebar.success("💥 Database fully cleared back to 0!")
+                        st.rerun()
+                    except Exception as wipe_fault:
+                        st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
             else:
                 st.sidebar.error("❌ Thesis data not found!")
     else:
