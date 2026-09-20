@@ -1,1 +1,40 @@
 .env
+.streamlit/secrets.toml
+
+# ─── BLOCK ALL EXCEL DATASETS ───
+*.xlsx
+*.xls
+*.csv
+
+# ─── BLOCK THE CORRECT CHROMA DATABASE FOLDER ───
+chroma_db_storage/
+
+# ─── BLOCK MESSY TEMPORARY TEST FILES ───
+*.jpg
+*.jpeg
+*.png
+*.txt
+Altercode.py
+UI.py
+app1.py
+chatengine.py
+check_total.py
+cleancode.py
+codeblock.py
+getllm.py
+lastcode.py
+n.py
+now.py
+original.py
+piece.py
+process.py
+real_count_audit.py
+temp.py
+templ.py
+trace_missing_rows.py
+tt
+valid.py
+
+# ─── BLOCK PYTHON SYSTEM CACHES ───
+__pycache__/
+*.pyc
