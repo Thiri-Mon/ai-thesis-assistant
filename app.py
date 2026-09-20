@@ -513,14 +513,14 @@ if st.sidebar.button("Store into Database"):
             else:
                 st.sidebar.error("❌ Thesis data not found!")
 
-        st.sidebar.markdown("---")
-        if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
-            try:
-                collection.delete(where={})
-                st.sidebar.success("💥 Database fully cleared back to 0!")
-                st.rerun()
-            except Exception as wipe_fault:
-                st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
+        try:
+            collection.delete(where={})
+            st.sidebar.success("💥 Database fully cleared back to 0!")
+            st.rerun()
+        except Exception as wipe_fault:
+            st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
     else:
         st.sidebar.warning("⚠️ Firstly,please upload the file.")
 # If ChromaDB already exists
