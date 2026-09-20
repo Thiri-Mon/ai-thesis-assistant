@@ -485,9 +485,9 @@ if st.sidebar.button("Store into Database"):
 
                 # 1. Package text titles and metadata maps cleanly into native LangChain Document structures
                 docs_to_insert = [
-                    Document(page_content=doc_text, metadata=meta_data)
-                    for doc_text, meta_data in zip(documents, metadatas)
-                ]
+                Document(page_content=str(doc_text), metadata=dict(meta_data))
+                for doc_text, meta_data in zip(documents, metadatas)
+            ]
                 
                 # 2. Check if the active vector store is completely fresh or None post-wipe
                 if st.session_state.get("vector_store") is None:
