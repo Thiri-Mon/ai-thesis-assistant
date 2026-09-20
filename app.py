@@ -467,31 +467,45 @@ if st.sidebar.button("Store into Database"):
 
         
 
+                    # ─── LOCATE YOUR INGESTION FINISH BLOCK (AROUND LINE 480+) ───
+                    # ─────────────────────────────────────────────────────────────
+        # LOCATE YOUR INGESTION FINISH BLOCK (AROUND LINE 470+)
+        # ─────────────────────────────────────────────────────────────
+                    # ─────────────────────────────────────────────────────────────
+        # LOCATE YOUR INGESTION FINISH BLOCK (AROUND LINE 470+)
+        # ─────────────────────────────────────────────────────────────
             if documents:
-                if "vector_store" in st.session_state:
-                    st.session_state.vector_store = None
-                gc.collect()
-                
-                import shutil
-                if os.path.exists(DB_DIR):
-                    try:
-                        shutil.rmtree(DB_DIR)
-                        print("🧹 Old database folder deleted cleanly via OS.")
-                    except Exception:
-                        pass
-                
-               # computed_ids = [f"doc_{idx}_{doc.metadata.get('row', index)}" for idx, doc in enumerate(documents)]
-                computed_ids = [f"doc_{idx}" for idx in range(len(documents))]
-                st.session_state.vector_store = Chroma.from_documents(
-                    documents=st.session_state.all_extracted_documents,
-                    embedding=embeddings,
-                    ids=computed_ids,
-                    persist_directory=DB_DIR,
-                    collection_metadata={"hnsw:space": "ip"}
-                )
+                from langchain_core.documents import Document
+                import time
 
-                st.sidebar.success(f" Total data from All departments ({len(documents)}) titles are succesfully stored.")
+                # ─── THE DIRECT FIX: Generate fresh, clean lists from 'documents' length natively ───
+                # This completely cuts out the undefined variable errors at the bottom!
+                metadatas = [{"source": "excel_upload"} for _ in range(len(documents))]
+                ids = [f"doc_{time.time_ns()}_{i}" for i in range(len(documents))]
+
+                # 1. Package text titles and metadata maps cleanly into native LangChain Document structures
+                docs_to_insert = [
+                    Document(page_content=doc_text, metadata=meta_data)
+                    for doc_text, meta_data in zip(documents, metadatas)
+                ]
+                
+                # 2. Check if the active vector store is completely fresh or None post-wipe
+                if st.session_state.get("vector_store") is None:
+                    from langchain_chroma import Chroma
+                    st.session_state.vector_store = Chroma(
+                        collection_name="thesis_collection",
+                        persist_directory=DB_DIR,
+                        embedding_function=embeddings  # Matches your global 'embeddings' variable name exactly!
+                    )
+                
+                # 3. CRITICAL CLOUD STREAMING FIX: Use add_documents to append rows safely to the storage layer!
+                st.session_state.vector_store.add_documents(documents=docs_to_insert, ids=ids)
+                
+                st.sidebar.success(f" Total data from All departments ({len(documents)}) titles are successfully stored.")
                 st.rerun()
+
+
+
 
             
             else:
