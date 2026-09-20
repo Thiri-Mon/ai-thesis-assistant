@@ -202,16 +202,23 @@ if "messages" not in st.session_state or len(st.session_state.messages) == 0:
             )
         })
 
-if "vector_store" not in st.session_state:
-    if os.path.exists(DB_DIR):
-        try:
-            st.session_state.vector_store = Chroma(
-                persist_directory=DB_DIR,
-                embedding_function=embeddings
-            )
-        except Exception:
-            st.session_state.vector_store = None
-    else:
+# =====================================================================
+# GLOBAL CHROMADB SYSTEM INITIALIZATION GATEWAY (LINES 205-216)
+# =====================================================================
+# Check if the store is completely missing OR explicitly set to None post-wipe
+if "vector_store" not in st.session_state or st.session_state.vector_store is None:
+    try:
+        from langchain_chroma import Chroma
+        
+        # This auto-initialization schema safely builds a brand new database path 
+        # structure directory immediately if DB_DIR was purged or empty!
+        st.session_state.vector_store = Chroma(
+            collection_name="thesis_collection",
+            persist_directory=DB_DIR,
+            embedding_function=embeddings  # Matches your global 'embeddings' variable name exactly!
+        )
+    except Exception as init_fault:
+        # Graceful fallback assignment to prevent application boot locks
         st.session_state.vector_store = None
 
 # ChromaDB uploaded or not Function
@@ -472,16 +479,7 @@ if st.sidebar.button("Store into Database"):
                     st.sidebar.error(f"Error reading file {uploaded_file.name}: {e}")
                     continue
 
-            st.sidebar.markdown("---")
-
-            if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
-                try:
-                    # Securely flushes your active ChromaDB indexing slots out of cache memory
-                    collection.delete(where={})
-                    st.sidebar.success("💥 Database fully cleared back to 0!")
-                    st.rerun()
-                except Exception as wipe_fault:
-                    st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
+        
 
             if documents:
                 if "vector_store" in st.session_state:
@@ -529,12 +527,25 @@ if not is_database_empty():
 st.sidebar.markdown("---")
 if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
         try:
-            documents.delete(where={})
-            st.sidebar.success("💥 Database fully cleared back to 0!")
-            st.rerun()
+            if "vector_store" in st.session_state and st.session_state.vector_store is not None:
+                # 1. Fetch all unique record IDs currently sitting inside the database collection index
+                existing_data = st.session_state.vector_store._collection.get()
+                existing_ids = existing_data.get('ids', [])
+                
+                if existing_ids:
+                    # 2. Delete explicitly by passing the extracted list of IDs (safe and compliant!)
+                    st.session_state.vector_store._collection.delete(ids=existing_ids)
+                
+                # 3. Clean up the application memory layout pointers cleanly
+                st.session_state.vector_store = None
+                
+                st.sidebar.success("💥 Database fully cleared back to 0!")
+                st.rerun()
+            else:
+                st.sidebar.warning("⚠️ No active vector database instance found to wipe.")
         except Exception as wipe_fault:
-            st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
-
+            # ─── THE FIXED EXCEPTION CLAUSE REQUIRED BY PYLANCE ───
+            st.sidebar.error(f"Failed to execute database index clear: {str(wipe_fault)}")
 # Clear Chat History
 if st.sidebar.button("🗑️ Clear Chat History"):
     st.session_state.messages = [{
