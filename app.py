@@ -856,34 +856,27 @@ if chat_prompt := st.chat_input("Ask your advisor for suggestions, topic improve
         # 🟢 ENGINE A: GROQ CLOUD PIPELINE INTERFACE
         from langchain_groq import ChatGroq
         llm_engine = ChatGroq(
-            model="llama-3.3-70b-specdec",  # Fixed your broken 404 model name string permanently
+            model="qwen-2.5-coder-32b",  # Fixed your broken 404 model name string permanently
             temperature=0.3,
             max_tokens=300,
             streaming=True
         )
         
         with st.container():
-            raw_casual_stream = llm_engine.stream(messages_payload)
-            clean_casual_stream = clean_reasoning_stream(raw_casual_stream)
-            
-            casual_container = None
-            casual_placeholder = None
-            
-            for chunk in clean_casual_stream:
-                text_slice = chunk.content if hasattr(chunk, 'content') else str(chunk)
-                full_chat_reply += text_slice
+            try:
+                # 1. Generate text streams straight from your updated Qwen cloud engine
+                raw_casual_stream = llm_engine.stream(messages_payload)
                 
-                if full_chat_reply.strip() and casual_container is None:
-                    casual_container = st.chat_message("assistant")
-                    casual_placeholder = casual_container.empty()
+                # 2. Render text directly inside a clean Streamlit chat message UI node
+                with st.chat_message("assistant"):
+                    full_chat_reply = st.write_stream(raw_casual_stream)
                     
-                if casual_placeholder is not None:
-                    casual_placeholder.markdown(full_chat_reply + "▌")
-                    
-            if casual_placeholder is not None:
-                casual_placeholder.markdown(full_chat_reply)
+                # 3. Log the reply cleanly into session history memory cache
                 st.session_state.messages.append({"role": "assistant", "content": full_chat_reply})
                 st.rerun()
+            except Exception as e:
+                # If the cloud stream fails, throw the error down to trigger the local Ollama fallback
+                raise e
                 
     except Exception as cloud_fault:
         # 🟠 ENGINE B: LOCAL OLLAMA EDGE ROUTER FAILOVER
