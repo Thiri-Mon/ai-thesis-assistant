@@ -202,21 +202,38 @@ if "messages" not in st.session_state or len(st.session_state.messages) == 0:
             )
         })
 
-
+if "vector_store" not in st.session_state:
+    if os.path.exists(DB_DIR):
+        try:
+            st.session_state.vector_store = Chroma(
+                persist_directory=DB_DIR,
+                embedding_function=embeddings
+            )
+        except Exception:
+            st.session_state.vector_store = None
+    else:
+        st.session_state.vector_store = None
 
 # ChromaDB uploaded or not Function
 def is_database_empty():
-    # ─── THE DIRECT FIX: Safely read from memory without throwing key lookup errors ───
-    v_store = st.session_state.get("vector_store", None)
-    
-    if v_store is None:
-        return True
+    if st.session_state.vector_store is None:
+        if os.path.exists(DB_DIR):
+            try:
+                st.session_state.vector_store = Chroma(
+                    persist_directory=DB_DIR,
+                    embedding_function=embeddings
+                )
+            except Exception:
+                return True
+        else:
+            return True
+            
     try:
-        # Extract the matching record ids natively from your collection object wrapper
-        total_count = v_store._collection.count()
-        return total_count == 0
+        db_data = st.session_state.vector_store.get()
+        if db_data and 'ids' in db_data and len(db_data['ids']) > 0:
+            return False  # Data exists
+        return True       # Empty data
     except Exception:
-        # Graceful fallback assignment to prevent application state locks
         return True
 
 # =========================================================================
@@ -296,16 +313,6 @@ threshold_input = st.sidebar.slider(
 # ==============================================================================
 if st.sidebar.button("Store into Database"):
     if uploaded_files:
-        if "vector_store" not in st.session_state or st.session_state.vector_store is None:
-            from langchain_chroma import Chroma
-            st.session_state.vector_store = Chroma(
-                collection_name="thesis_collection",
-                persist_directory=DB_DIR,
-                embedding_function=embeddings
-            )
-        
-        # ─── 🚀 INSERT THIS CRITICAL COLLECTION BRIDGE VARIABLE LINE RIGHT HERE ───
-        collection = st.session_state.vector_store._collection
         with st.sidebar.spinner("Vectorizing data into Vector Database ..."):
             
             documents = []
@@ -465,47 +472,42 @@ if st.sidebar.button("Store into Database"):
                     st.sidebar.error(f"Error reading file {uploaded_file.name}: {e}")
                     continue
 
-        
+            st.sidebar.markdown("---")
 
-                    # ─── LOCATE YOUR INGESTION FINISH BLOCK (AROUND LINE 480+) ───
-                    # ─────────────────────────────────────────────────────────────
-        # LOCATE YOUR INGESTION FINISH BLOCK (AROUND LINE 470+)
-        # ─────────────────────────────────────────────────────────────
-                    # ─────────────────────────────────────────────────────────────
-        # LOCATE YOUR INGESTION FINISH BLOCK (AROUND LINE 470+)
-        # ─────────────────────────────────────────────────────────────
+            if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
+                try:
+                    # Securely flushes your active ChromaDB indexing slots out of cache memory
+                    collection.delete(where={})
+                    st.sidebar.success("💥 Database fully cleared back to 0!")
+                    st.rerun()
+                except Exception as wipe_fault:
+                    st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
+
             if documents:
-                from langchain_core.documents import Document
-                import time
+                if "vector_store" in st.session_state:
+                    st.session_state.vector_store = None
+                gc.collect()
+                
+                import shutil
+                if os.path.exists(DB_DIR):
+                    try:
+                        shutil.rmtree(DB_DIR)
+                        print("🧹 Old database folder deleted cleanly via OS.")
+                    except Exception:
+                        pass
+                
+               # computed_ids = [f"doc_{idx}_{doc.metadata.get('row', index)}" for idx, doc in enumerate(documents)]
+                computed_ids = [f"doc_{idx}" for idx in range(len(documents))]
+                st.session_state.vector_store = Chroma.from_documents(
+                    documents=st.session_state.all_extracted_documents,
+                    embedding=embeddings,
+                    ids=computed_ids,
+                    persist_directory=DB_DIR,
+                    collection_metadata={"hnsw:space": "ip"}
+                )
 
-                # ─── THE DIRECT FIX: Generate fresh, clean lists from 'documents' length natively ───
-                # This completely cuts out the undefined variable errors at the bottom!
-                metadatas = [{"source": "excel_upload"} for _ in range(len(documents))]
-                ids = [f"doc_{time.time_ns()}_{i}" for i in range(len(documents))]
-
-                # 1. Package text titles and metadata maps cleanly into native LangChain Document structures
-                docs_to_insert = [
-                Document(page_content=str(doc_text), metadata=dict(meta_data))
-                for doc_text, meta_data in zip(documents, metadatas)
-            ]
-                
-                # 2. Check if the active vector store is completely fresh or None post-wipe
-                if st.session_state.get("vector_store") is None:
-                    from langchain_chroma import Chroma
-                    st.session_state.vector_store = Chroma(
-                        collection_name="thesis_collection",
-                        persist_directory=DB_DIR,
-                        embedding_function=embeddings  # Matches your global 'embeddings' variable name exactly!
-                    )
-                
-                # 3. CRITICAL CLOUD STREAMING FIX: Use add_documents to append rows safely to the storage layer!
-                st.session_state.vector_store.add_documents(documents=docs_to_insert, ids=ids)
-                
-                st.sidebar.success(f" Total data from All departments ({len(documents)}) titles are successfully stored.")
+                st.sidebar.success(f" Total data from All departments ({len(documents)}) titles are succesfully stored.")
                 st.rerun()
-
-
-
 
             
             else:
@@ -525,18 +527,39 @@ if not is_database_empty():
         pass
 
 st.sidebar.markdown("---")
+st.sidebar.markdown("### 🖥️ AI Infrastructure Monitor")
+    
+    # Establish the runtime tracking context flags out of session history parameters
+is_local_failover = any(
+        "Switching to Local Ollama" in str(msg.get("content", "")) 
+        for msg in st.session_state.get("messages", [])
+    )
+is_fatal_lock = any(
+        "Critical Fatal Exception" in str(msg.get("content", "")) 
+        for msg in st.session_state.get("messages", [])
+    )
+    
+    # Render a single, state-aware tracking badge
+if is_fatal_lock:
+        st.sidebar.error("❌ Critical Fatal Exception:\nAll AI compute pipelines are unreachable.")
+elif is_local_failover:
+        st.sidebar.warning("⚠️ Groq Cloud limited.\nRunning on Local Ollama Engine (Offline)")
+else:
+        st.sidebar.success("⚡ Active Engine: Groq Cloud\n(Fast Cloud Hosting Mode)")
+
+st.sidebar.markdown("---")
 if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
         try:
-            if "vector_store" in st.session_state and st.session_state.vector_store is not None:
+            if st.session_state.get("vector_store") is not None:
                 # 1. Fetch all unique record IDs currently sitting inside the database collection index
                 existing_data = st.session_state.vector_store._collection.get()
                 existing_ids = existing_data.get('ids', [])
                 
                 if existing_ids:
-                    # 2. Delete explicitly by passing the extracted list of IDs (safe and compliant!)
+                    # 2. Delete explicitly by passing the extracted list of IDs
                     st.session_state.vector_store._collection.delete(ids=existing_ids)
                 
-                # 3. Clean up the application memory layout pointers cleanly
+                # 3. Clean up the application memory cache pointers cleanly
                 st.session_state.vector_store = None
                 
                 st.sidebar.success("💥 Database fully cleared back to 0!")
@@ -544,8 +567,7 @@ if st.sidebar.button("🚨 WIPE ALL DATABASE TITLES"):
             else:
                 st.sidebar.warning("⚠️ No active vector database instance found to wipe.")
         except Exception as wipe_fault:
-            # ─── THE FIXED EXCEPTION CLAUSE REQUIRED BY PYLANCE ───
-            st.sidebar.error(f"Failed to execute database index clear: {str(wipe_fault)}")
+            st.sidebar.error(f"Failed to clear database index: {str(wipe_fault)}")
 # Clear Chat History
 if st.sidebar.button("🗑️ Clear Chat History"):
     st.session_state.messages = [{
@@ -867,7 +889,7 @@ if chat_prompt := st.chat_input("Ask your advisor for suggestions, topic improve
         # 🟠 ENGINE B: LOCAL OLLAMA EDGE ROUTER FAILOVER
         st.sidebar.warning("⚠️ Groq Cloud unavailable/limited. Switching to Local Ollama...")
         try:
-            from langchain_community.chat_models import ChatOllama
+            from langchain_ollama import ChatOllama
             local_llm_engine = ChatOllama(
                 model="llama3.2",
                 base_url="http://127.0.0.1:11434",
